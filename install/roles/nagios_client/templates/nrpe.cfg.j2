@@ -205,12 +205,14 @@ command[check_jenkins]={{ nrpe_plugin_dir }}/check_tcp -H localhost -p {{ jenkin
 {% if ansible_distribution != "FreeBSD" %}
 command[check_raid]={{ nrpe_plugin_dir }}/check_raid
 {% endif %}
+{% if inventory_hostname in groups['filemon_hosts'] %}
 {% if inventory_hostname in filemon_hosts_config %}
 {% for file in filemon_hosts_config[inventory_hostname] %}
-command[{{ nrpe_cmd.file_age }}_{{ loop.index0 }}]={{ nrpe_plugin_dir }}/check_file_age -f {{ file.path }} -w {{ file.warn_days | int * 86400 }} -c {{ file.crit_days | int * 86400 }}
+command[{{ nrpe_cmd.file_age }}_{{ loop.index0 }}]={{ sudo_bin }} {{ nrpe_plugin_dir }}/check_file_age -f {{ file.path }} -w {{ file.warn_days | int * 86400 }} -c {{ file.crit_days | int * 86400 }}
 {% endfor %}
 {% else %}
-command[{{ nrpe_cmd.file_age }}]={{ nrpe_plugin_dir }}/check_file_age -f {{ filemon_target_file }} -w {{ filemon_warn_days | int * 86400 }} -c {{ filemon_crit_days | int * 86400 }}
+command[{{ nrpe_cmd.file_age }}]={{ sudo_bin }} {{ nrpe_plugin_dir }}/check_file_age -f {{ filemon_target_file }} -w {{ filemon_warn_days | int * 86400 }} -c {{ filemon_crit_days | int * 86400 }}
+{% endif %}
 {% endif %}
 
 # The following examples allow user-supplied arguments and can

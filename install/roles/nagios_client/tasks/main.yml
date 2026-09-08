@@ -13,6 +13,8 @@
     nrpe_user: nagios
     nrpe_group: nagios
     nrpe_plugin_dir: /usr/lib/nagios/plugins
+    nrpe_sudoers_dir: /etc/sudoers.d
+    sudo_bin: /usr/bin/sudo
   when: ansible_os_family == "Debian"
 
 - name: Set RedHat specific NRPE variables
@@ -21,6 +23,8 @@
     nrpe_user: nrpe
     nrpe_group: nrpe
     nrpe_plugin_dir: /usr/lib64/nagios/plugins
+    nrpe_sudoers_dir: /etc/sudoers.d
+    sudo_bin: /usr/bin/sudo
   when: ansible_os_family in ["RedHat", "Rocky"]
 
 - name: Set FreeBSD specific NRPE variables
@@ -29,6 +33,8 @@
     nrpe_user: nrpe
     nrpe_group: nrpe
     nrpe_plugin_dir: /usr/local/libexec/nagios
+    nrpe_sudoers_dir: /usr/local/etc/sudoers.d
+    sudo_bin: /usr/local/bin/sudo
   when: ansible_os_family == "FreeBSD"
 
 - name: Install gnupg2 (Legacy EL7)
@@ -226,6 +232,23 @@
     mode: '0755'
   become: true
   when: ansible_system == "FreeBSD"
+
+- name: Allow NRPE user NOPASSWD sudo for check_file_age (filemon_hosts)
+  ansible.builtin.copy:
+    dest: "{{ nrpe_sudoers_dir }}/nagios_check_file_age"
+    content: "{{ nrpe_user }} ALL=(root) NOPASSWD: {{ nrpe_plugin_dir }}/check_file_age\n"
+    owner: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  become: true
+  when: inventory_hostname in groups['filemon_hosts']
+
+- name: Remove NRPE check_file_age sudoers drop-in (non filemon_hosts)
+  ansible.builtin.file:
+    path: "{{ nrpe_sudoers_dir }}/nagios_check_file_age"
+    state: absent
+  become: true
+  when: inventory_hostname not in groups['filemon_hosts']
 
 - name: Apply SELinux boolean nagios_run_sudo
   ansible.posix.seboolean:
