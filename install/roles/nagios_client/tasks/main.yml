@@ -233,22 +233,17 @@
   become: true
   when: ansible_system == "FreeBSD"
 
-- name: Allow NRPE user NOPASSWD sudo for check_file_age (filemon_hosts)
-  ansible.builtin.copy:
-    dest: "{{ nrpe_sudoers_dir }}/nagios_check_file_age"
-    content: "{{ nrpe_user }} ALL=(root) NOPASSWD: {{ nrpe_plugin_dir }}/check_file_age\n"
-    owner: root
-    mode: '0440'
-    validate: 'visudo -cf %s'
+- name: Manage NRPE NOPASSWD sudo for check_file_age (filemon_hosts)
+  community.general.sudoers:
+    name: nagios_check_file_age
+    state: "{{ 'present' if inventory_hostname in groups['filemon_hosts'] else 'absent' }}"
+    user: "{{ nrpe_user }}"
+    runas: root
+    commands: "{{ nrpe_plugin_dir }}/check_file_age"
+    nopassword: true
+    sudoers_path: "{{ nrpe_sudoers_dir }}"
+    validation: required
   become: true
-  when: inventory_hostname in groups['filemon_hosts']
-
-- name: Remove NRPE check_file_age sudoers drop-in (non filemon_hosts)
-  ansible.builtin.file:
-    path: "{{ nrpe_sudoers_dir }}/nagios_check_file_age"
-    state: absent
-  become: true
-  when: inventory_hostname not in groups['filemon_hosts']
 
 - name: Apply SELinux boolean nagios_run_sudo
   ansible.posix.seboolean:
