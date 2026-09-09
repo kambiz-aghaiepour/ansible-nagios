@@ -236,7 +236,7 @@
 - name: Manage NRPE NOPASSWD sudo for check_file_age (filemon_hosts)
   community.general.sudoers:
     name: nagios_check_file_age
-    state: "{{ 'present' if inventory_hostname in groups['filemon_hosts'] else 'absent' }}"
+    state: "{{ 'present' if inventory_hostname in groups.get('filemon_hosts', []) else 'absent' }}"
     user: "{{ nrpe_user }}"
     runas: root
     commands: "{{ nrpe_plugin_dir }}/check_file_age"
