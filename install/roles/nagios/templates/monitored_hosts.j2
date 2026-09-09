@@ -12,6 +12,7 @@
   (install/group_vars/all.yml), selected per host by OS.
 #}
 {% macro render_group(group_name, alias, extra_services=[], filemon=false) %}
+{% if groups.get(group_name, []) %}
 define hostgroup {
     hostgroup_name {{ group_name }}
     alias {{ alias }}
@@ -145,4 +146,5 @@ define service {
 {% endif %}
 
 {% endfor %}
+{% endif %}
 {% endmacro %}

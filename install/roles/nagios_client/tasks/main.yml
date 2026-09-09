@@ -13,6 +13,8 @@
     nrpe_user: nagios
     nrpe_group: nagios
     nrpe_plugin_dir: /usr/lib/nagios/plugins
+    nrpe_sudoers_dir: /etc/sudoers.d
+    sudo_bin: /usr/bin/sudo
   when: ansible_os_family == "Debian"
 
 - name: Set RedHat specific NRPE variables
@@ -21,6 +23,8 @@
     nrpe_user: nrpe
     nrpe_group: nrpe
     nrpe_plugin_dir: /usr/lib64/nagios/plugins
+    nrpe_sudoers_dir: /etc/sudoers.d
+    sudo_bin: /usr/bin/sudo
   when: ansible_os_family in ["RedHat", "Rocky"]
 
 - name: Set FreeBSD specific NRPE variables
@@ -29,6 +33,8 @@
     nrpe_user: nrpe
     nrpe_group: nrpe
     nrpe_plugin_dir: /usr/local/libexec/nagios
+    nrpe_sudoers_dir: /usr/local/etc/sudoers.d
+    sudo_bin: /usr/local/bin/sudo
   when: ansible_os_family == "FreeBSD"
 
 - name: Install gnupg2 (Legacy EL7)
@@ -227,6 +233,18 @@
   become: true
   when: ansible_system == "FreeBSD"
 
+- name: Manage NRPE NOPASSWD sudo for check_file_age (filemon_hosts)
+  community.general.sudoers:
+    name: nagios_check_file_age
+    state: "{{ 'present' if inventory_hostname in groups.get('filemon_hosts', []) else 'absent' }}"
+    user: "{{ nrpe_user }}"
+    runas: root
+    commands: "{{ nrpe_plugin_dir }}/check_file_age"
+    nopassword: true
+    sudoers_path: "{{ nrpe_sudoers_dir }}"
+    validation: required
+  become: true
+
 - name: Apply SELinux boolean nagios_run_sudo
   ansible.posix.seboolean:
     name: nagios_run_sudo
@@ -234,8 +252,7 @@
     persistent: true
   ignore_errors: true
   when:
-    - ansible_distribution_major_version | int <= 7
-    - ansible_os_family == "RedHat"
+    - ansible_os_family in ["RedHat", "Rocky"]
   become: true
 
 - name: Apply SELinux boolean logging_syslogd_run_nagios_plugins
@@ -245,8 +262,7 @@
     persistent: true
   ignore_errors: true
   when:
-    - ansible_distribution_major_version | int <= 7
-    - ansible_os_family == "RedHat"
+    - ansible_os_family in ["RedHat", "Rocky"]
   become: true
 
 - name: Enable and Restart NRPE service (RedHat/Rocky 7+)
