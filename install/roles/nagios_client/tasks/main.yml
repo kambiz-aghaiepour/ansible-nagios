@@ -257,8 +257,7 @@
     persistent: true
   ignore_errors: true
   when:
-    - ansible_distribution_major_version | int <= 7
-    - ansible_os_family == "RedHat"
+    - ansible_os_family in ["RedHat", "Rocky"]
   become: true
 
 - name: Apply SELinux boolean logging_syslogd_run_nagios_plugins
@@ -268,8 +267,7 @@
     persistent: true
   ignore_errors: true
   when:
-    - ansible_distribution_major_version | int <= 7
-    - ansible_os_family == "RedHat"
+    - ansible_os_family in ["RedHat", "Rocky"]
   become: true
 
 - name: Enable and Restart NRPE service (RedHat/Rocky 7+)
